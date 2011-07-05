@@ -32,8 +32,8 @@ or implied, of Christopher Allen Ogden.
 #include <sstream>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
-#include "call_with_tuple.h"
-#include "serialize_tuple.h"
+#include "call_with_tuple.h" // https://github.com/Sydius/call-with-tuple
+#include "serialize_tuple.h" // https://github.com/Sydius/serialize-tuple
 
 namespace invoke {
 

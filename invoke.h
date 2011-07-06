@@ -50,8 +50,8 @@ class InvokerFactory<_Res(*)(_Args...)>
 
         static Invokable createInvoker(Function func)
         {
-            return [&func](boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput) {
-                
+            return [func](boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput)
+            {
                 std::tuple<typename std::decay<_Args>::type...> args;
                 methodInput >> args;
                 InvokerFactory<_Res(*)(_Args...)>::_invoke(func, methodOutput, args, _Result<_Res>{});

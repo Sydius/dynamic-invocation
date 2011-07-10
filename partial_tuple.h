@@ -26,34 +26,43 @@ authors and should not be interpreted as representing official policies, either 
 or implied, of Christopher Allen Ogden.
 */
 
-#include <iostream>
-#include "invoke.h"
+#pragma once
+#include <tuple>
 
-void foo(int extra)
+template <unsigned int NumberToIgnore, typename... Args>
+class PartialTuple
 {
-    std::cout << "Hello, world!" << extra << std::endl;
-}
+    private:
+        template <unsigned int, typename...> struct TupleHead;
 
-int bar(int x, const std::string & blah, int extra)
-{
-    std::cout << blah << ": " << x << std::endl;
-    return x + 5;
-}
+        template <typename... Tail>
+        struct TupleHead<0, Tail...>
+        {
+            typedef std::tuple<> type;
+        };
 
-#define FUNC(x) #x, x
+        template <typename Head>
+        struct TupleHead<0, Head>
+        {
+            typedef std::tuple<> type;
+        };
 
-int main(int argc, char * argv[])
-{
-    invoke::Invoker<int> invoker;
-    invoker.registerFunction(FUNC(foo));
-    invoker.registerFunction(FUNC(bar));
+        template <unsigned int NumberToPrepend, typename Head, typename... Tail>
+        struct TupleHead<NumberToPrepend, Head, Tail...>
+        {
+            private:
+                template <typename ToAdd, typename Tuple> struct PrependTuple;
 
-    std::string fooInput = invoker.serialize(FUNC(foo));
-    std::string barInput = invoker.serialize(FUNC(bar), 5, "testing");
+                template <typename ToAdd, typename... TupleArgs>
+                struct PrependTuple<ToAdd, std::tuple<TupleArgs...>>
+                {
+                    typedef typename std::tuple<ToAdd, TupleArgs...> type;
+                };
 
-    std::string fooOutput = invoker.invoke(fooInput, 100);
-    std::string barOutput = invoker.invoke(barInput, 200);
+            public:
+                typedef typename PrependTuple<Head, typename TupleHead<NumberToPrepend - 1, Tail...>::type>::type type;
+        };
 
-    int y = invoker.deserialize(FUNC(bar), barOutput);
-    std::cout << y << std::endl;
-}
+    public:
+        typedef typename TupleHead<sizeof...(Args) - NumberToIgnore, Args...>::type type;
+};

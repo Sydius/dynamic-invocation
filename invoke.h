@@ -112,6 +112,21 @@ class Invoker
         }
 
         /**
+         * Get the name of the serialized call
+         *
+         * @param input Serialized input
+         * @return      Name of the serialized call
+         */
+        std::string extractName(const std::string & input) const
+        {
+            std::stringstream methodStreamIn{input};
+            boost::archive::text_iarchive methodInput{methodStreamIn};
+            std::string name;
+            methodInput >> name;
+            return name;
+        }
+
+        /**
          * Serialize a function call.
          *
          * @param name      Name of the function for which to serialize

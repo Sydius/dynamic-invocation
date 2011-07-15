@@ -26,34 +26,40 @@ authors and should not be interpreted as representing official policies, either 
 or implied, of Christopher Allen Ogden.
 */
 
-#include <iostream>
 #include "invoke.h"
-
-void foo(int extra)
-{
-    std::cout << "Hello, world!" << extra << std::endl;
-}
-
-int bar(int x, const std::string & blah, int extra)
-{
-    std::cout << blah << ": " << x << std::endl;
-    return x + 5;
-}
-
 #define FUNC(x) #x, x
 
-int main(int argc, char * argv[])
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE invoke
+#include <boost/test/unit_test.hpp>
+
+void noArgumentsFunc() { }
+
+BOOST_AUTO_TEST_CASE(no_arguments)
+{
+    invoke::Invoker<> invoker;
+    invoker.registerFunction(FUNC(noArgumentsFunc));
+    std::string serialized{invoker.serialize(FUNC(noArgumentsFunc))};
+    std::string result{invoker.invoke("noArgumentsFunc", serialized)};
+    //BOOST_CHECK_EQUAL(result, std::string());
+}
+
+int oneArgumentFunc(int x) { return x + 5; }
+
+BOOST_AUTO_TEST_CASE(one_argument)
+{
+    invoke::Invoker<> invoker;
+    invoker.registerFunction(FUNC(oneArgumentFunc));
+    std::string serialized{invoker.serialize(FUNC(oneArgumentFunc), 5)};
+    std::string result{invoker.invoke("oneArgumentFunc", serialized)};
+    BOOST_CHECK_EQUAL(invoker.deserialize(FUNC(oneArgumentFunc), result), 10);
+}
+
+BOOST_AUTO_TEST_CASE(extra_argument)
 {
     invoke::Invoker<int> invoker;
-    invoker.registerFunction(FUNC(foo));
-    invoker.registerFunction(FUNC(bar));
-
-    std::string fooInput = invoker.serialize(FUNC(foo));
-    std::string barInput = invoker.serialize(FUNC(bar), 5, "testing");
-
-    std::string fooOutput = invoker.invoke("foo", fooInput, 100);
-    std::string barOutput = invoker.invoke("bar", barInput, 200);
-
-    int y = invoker.deserialize(FUNC(bar), barOutput);
-    std::cout << y << std::endl;
+    invoker.registerFunction(FUNC(oneArgumentFunc));
+    std::string serialized{invoker.serialize(FUNC(oneArgumentFunc))};
+    std::string result{invoker.invoke("oneArgumentFunc", serialized, 5)};
+    BOOST_CHECK_EQUAL(invoker.deserialize(FUNC(oneArgumentFunc), result), 10);
 }

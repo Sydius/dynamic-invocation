@@ -15,6 +15,6 @@ def build(bld):
         source=['main.cpp'],
         includes=['../call-with-tuple', '../serialize-tuple'],
         target='dynamic-invocation',
-        lib=['boost_serialization'],
+        lib=['boost_serialization', 'boost_unit_test_framework'],
         cxxflags='-O3 --std=c++0x --pedantic -Wall'
     )

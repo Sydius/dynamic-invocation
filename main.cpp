@@ -51,8 +51,8 @@ int main(int argc, char * argv[])
     std::string fooInput = invoker.serialize(FUNC(foo));
     std::string barInput = invoker.serialize(FUNC(bar), 5, "testing");
 
-    std::string fooOutput = invoker.invoke(fooInput, 100);
-    std::string barOutput = invoker.invoke(barInput, 200);
+    std::string fooOutput = invoker.invoke("foo", fooInput, 100);
+    std::string barOutput = invoker.invoke("bar", barInput, 200);
 
     int y = invoker.deserialize(FUNC(bar), barOutput);
     std::cout << y << std::endl;

@@ -95,35 +95,19 @@ class Invoker
         /**
          * Invokes a registered function.
          *
-         * @param input     Serialized input (includes the function name to be called)
+         * @param name      Name of the function to be called
+         * @param input     Serialized input
          * @param extra...  Extra paramaters to be passed to the function
          * @return          Serialized return value from the invoked function
          */
-        std::string invoke(const std::string & input, Extra && ... extra)
+        std::string invoke(const std::string & name, const std::string & input, Extra && ... extra)
         {
             std::stringstream methodStreamIn{input};
             std::stringstream methodStreamOut;
             boost::archive::text_iarchive methodInput{methodStreamIn};
             boost::archive::text_oarchive methodOutput{methodStreamOut};
-            std::string name;
-            methodInput >> name;
             _methods[name](methodInput, methodOutput, std::forward<Extra>(extra)...);
             return methodStreamOut.str();
-        }
-
-        /**
-         * Get the name of the serialized call
-         *
-         * @param input Serialized input
-         * @return      Name of the serialized call
-         */
-        std::string extractName(const std::string & input) const
-        {
-            std::stringstream methodStreamIn{input};
-            boost::archive::text_iarchive methodInput{methodStreamIn};
-            std::string name;
-            methodInput >> name;
-            return name;
         }
 
         /**
@@ -140,7 +124,6 @@ class Invoker
             auto params = TupleFromFunc<Func>::createTuple(std::forward<Args>(args)...);
             std::stringstream ss;
             boost::archive::text_oarchive methodInput{ss};
-            methodInput << name;
             methodInput << params;
             return ss.str();
         }

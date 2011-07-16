@@ -82,6 +82,8 @@ template<typename... Extra>
 class Invoker
 {
     public:
+        Invoker():_methods{}{}
+
         /**
          * Register a function for dynamic invocation or serialization.
          *

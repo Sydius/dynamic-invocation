@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(no_arguments)
     invoker.registerFunction(FUNC(noArgumentsFunc));
     std::string serialized{invoker.serialize(FUNC(noArgumentsFunc))};
     std::string result{invoker.invoke("noArgumentsFunc", serialized)};
-    //BOOST_CHECK_EQUAL(result, std::string());
+    BOOST_CHECK_EQUAL(result, std::string());
 }
 
 int oneArgumentFunc(int x) { return x + 5; }

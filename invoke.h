@@ -47,13 +47,13 @@ class InvokerFactory<Res(*)(Args...)>
         typedef Res(*Function)(Args...);
 
         template<typename... Extra>
-        static std::function<void(boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra... extra)> createInvoker(Function func)
+        static std::function<bool(boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra... extra)> createInvoker(Function func)
         {
-            return [func](boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra && ... extra)
+            return [func](boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra && ... extra) -> bool
             {
                 typename PartialTuple<sizeof...(Extra), typename std::decay<Args>::type...>::type serializedArgs;
                 methodInput >> serializedArgs;
-                InvokerFactory<Function>::invoke(func, methodOutput, serializedArgs, Result<Res>{}, std::forward<Extra>(extra)...);
+                return InvokerFactory<Function>::invoke(func, methodOutput, serializedArgs, Result<Res>{}, std::forward<Extra>(extra)...);
             };
         }
 
@@ -61,18 +61,20 @@ class InvokerFactory<Res(*)(Args...)>
         template<typename Type> struct Result { };
 
         template<typename TupleType, typename... Extra>
-        static void invoke(Function func, boost::archive::text_oarchive & methodOutput, 
+        static bool invoke(Function func, boost::archive::text_oarchive & methodOutput, 
                 const TupleType & args, Result<void>, Extra && ... extra)
         {
             callWithTuple<void>(func, args, std::forward<Extra>(extra)...);
+            return false;
         }
 
         template<typename Ret, typename TupleType, typename... Extra>
-        static void invoke(Function func, boost::archive::text_oarchive & methodOutput, 
+        static bool invoke(Function func, boost::archive::text_oarchive & methodOutput, 
                 const TupleType & args, Result<Ret>, Extra && ... extra)
         {
             Ret r{callWithTuple<Ret>(func, args, std::forward<Extra>(extra)...)};
             methodOutput << r;
+            return true;
         }
 };
 
@@ -106,8 +108,11 @@ class Invoker
             std::stringstream methodStreamOut;
             boost::archive::text_iarchive methodInput{methodStreamIn};
             boost::archive::text_oarchive methodOutput{methodStreamOut};
-            _methods[name](methodInput, methodOutput, std::forward<Extra>(extra)...);
-            return methodStreamOut.str();
+            if (_methods[name](methodInput, methodOutput, std::forward<Extra>(extra)...)) {
+                return methodStreamOut.str();
+            } else {
+                return std::string();
+            }
         }
 
         /**
@@ -172,7 +177,7 @@ class Invoker
         };
 
         std::unordered_map<std::string,
-            std::function<void(boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra && ... extra)>
+            std::function<bool(boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra && ... extra)>
             > _methods;
 };
 

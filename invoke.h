@@ -29,31 +29,30 @@ or implied, of Christopher Allen Ogden.
 #pragma once
 #include <unordered_map>
 #include <sstream>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
 #include "call_with_tuple.h" // https://github.com/Sydius/call-with-tuple
 #include "serialize_tuple.h" // https://github.com/Sydius/serialize-tuple
 #include "partial_tuple.h"
 
 namespace invoke {
 
-template<typename>
+template<typename, typename, typename>
 class InvokerFactory;
 
-template<typename Res, typename... Args>
-class InvokerFactory<Res(*)(Args...)>
+template<typename Res, typename... Args, typename IArchive, typename OArchive>
+class InvokerFactory<Res(*)(Args...), IArchive, OArchive>
 {
     public:
         typedef Res(*Function)(Args...);
 
         template<typename... Extra>
-        static std::function<bool(boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra... extra)> createInvoker(Function func)
+        static std::function<bool(IArchive & methodInput, OArchive & methodOutput, Extra... extra)> createInvoker(Function func)
         {
-            return [func](boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra && ... extra) -> bool
+            return [func](IArchive & methodInput, OArchive & methodOutput, Extra && ... extra) -> bool
             {
                 typename PartialTuple<sizeof...(Extra), typename std::decay<Args>::type...>::type serializedArgs;
                 methodInput >> serializedArgs;
-                return InvokerFactory<Function>::invoke(func, methodOutput, serializedArgs, Result<Res>{}, std::forward<Extra>(extra)...);
+                return InvokerFactory<Function, IArchive, OArchive>::invoke(
+                        func, methodOutput, serializedArgs, Result<Res>{}, std::forward<Extra>(extra)...);
             };
         }
 
@@ -61,7 +60,7 @@ class InvokerFactory<Res(*)(Args...)>
         template<typename Type> struct Result { };
 
         template<typename TupleType, typename... Extra>
-        static bool invoke(Function func, boost::archive::text_oarchive & methodOutput, 
+        static bool invoke(Function func, OArchive & methodOutput, 
                 const TupleType & args, Result<void>, Extra && ... extra)
         {
             callWithTuple<void>(func, args, std::forward<Extra>(extra)...);
@@ -69,7 +68,7 @@ class InvokerFactory<Res(*)(Args...)>
         }
 
         template<typename Ret, typename TupleType, typename... Extra>
-        static bool invoke(Function func, boost::archive::text_oarchive & methodOutput, 
+        static bool invoke(Function func, OArchive & methodOutput, 
                 const TupleType & args, Result<Ret>, Extra && ... extra)
         {
             Ret r{callWithTuple<Ret>(func, args, std::forward<Extra>(extra)...)};
@@ -78,7 +77,7 @@ class InvokerFactory<Res(*)(Args...)>
         }
 };
 
-template<typename... Extra>
+template<typename IArchive, typename OArchive, typename... Extra>
 class Invoker
 {
     public:
@@ -93,7 +92,7 @@ class Invoker
         template<typename Func>
         void registerFunction(const std::string & name, Func func)
         {
-            _methods[name] = InvokerFactory<Func>:: template createInvoker<Extra...>(func);
+            _methods[name] = InvokerFactory<Func, IArchive, OArchive>:: template createInvoker<Extra...>(func);
         }
 
         /**
@@ -108,8 +107,8 @@ class Invoker
         {
             std::stringstream methodStreamIn{input};
             std::stringstream methodStreamOut;
-            boost::archive::text_iarchive methodInput{methodStreamIn};
-            boost::archive::text_oarchive methodOutput{methodStreamOut};
+            IArchive methodInput{methodStreamIn};
+            OArchive methodOutput{methodStreamOut};
             if (_methods[name](methodInput, methodOutput, std::forward<Extra>(extra)...)) {
                 return methodStreamOut.str();
             } else {
@@ -130,7 +129,7 @@ class Invoker
         {
             auto params = TupleFromFunc<Func>::createTuple(std::forward<Args>(args)...);
             std::stringstream ss;
-            boost::archive::text_oarchive methodInput{ss};
+            OArchive methodInput{ss};
             methodInput << params;
             return ss.str();
         }
@@ -157,7 +156,7 @@ class Invoker
         {
             typename FuncResult<Func>::type ret;
             std::stringstream ss{output};
-            boost::archive::text_iarchive methodOutput{ss};
+            IArchive methodOutput{ss};
             methodOutput >> ret;
             return ret;
         }
@@ -179,7 +178,7 @@ class Invoker
         };
 
         std::unordered_map<std::string,
-            std::function<bool(boost::archive::text_iarchive & methodInput, boost::archive::text_oarchive & methodOutput, Extra && ... extra)>
+            std::function<bool(IArchive & methodInput, OArchive & methodOutput, Extra && ... extra)>
             > _methods;
 };
 

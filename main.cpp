@@ -26,6 +26,9 @@ authors and should not be interpreted as representing official policies, either 
 or implied, of Christopher Allen Ogden.
 */
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
 #include "invoke.h"
 #define FUNC(x) #x, x
 
@@ -37,7 +40,7 @@ void noArgumentsFunc() { }
 
 BOOST_AUTO_TEST_CASE(no_arguments)
 {
-    invoke::Invoker<> invoker;
+    invoke::Invoker<boost::archive::text_iarchive, boost::archive::text_oarchive> invoker;
     invoker.registerFunction(FUNC(noArgumentsFunc));
     std::string serialized{invoker.serialize(FUNC(noArgumentsFunc))};
     std::string result{invoker.invoke("noArgumentsFunc", serialized)};
@@ -48,7 +51,7 @@ int oneArgumentFunc(int x) { return x + 5; }
 
 BOOST_AUTO_TEST_CASE(one_argument)
 {
-    invoke::Invoker<> invoker;
+    invoke::Invoker<boost::archive::text_iarchive, boost::archive::text_oarchive> invoker;
     invoker.registerFunction(FUNC(oneArgumentFunc));
     std::string serialized{invoker.serialize(FUNC(oneArgumentFunc), 5)};
     std::string result{invoker.invoke("oneArgumentFunc", serialized)};
@@ -57,7 +60,7 @@ BOOST_AUTO_TEST_CASE(one_argument)
 
 BOOST_AUTO_TEST_CASE(extra_argument)
 {
-    invoke::Invoker<int> invoker;
+    invoke::Invoker<boost::archive::text_iarchive, boost::archive::text_oarchive, int> invoker;
     invoker.registerFunction(FUNC(oneArgumentFunc));
     std::string serialized{invoker.serialize(FUNC(oneArgumentFunc))};
     std::string result{invoker.invoke("oneArgumentFunc", serialized, 5)};

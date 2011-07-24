@@ -107,8 +107,8 @@ class Invoker
         {
             std::stringstream methodStreamIn{input};
             std::stringstream methodStreamOut;
-            IArchive methodInput{methodStreamIn};
-            OArchive methodOutput{methodStreamOut};
+            IArchive methodInput{methodStreamIn, boost::archive::no_header};
+            OArchive methodOutput{methodStreamOut, boost::archive::no_header};
             if (_methods[name](methodInput, methodOutput, std::forward<Extra>(extra)...)) {
                 return methodStreamOut.str();
             } else {
@@ -129,7 +129,7 @@ class Invoker
         {
             auto params = TupleFromFunc<Func>::createTuple(std::forward<Args>(args)...);
             std::stringstream ss;
-            OArchive methodInput{ss};
+            OArchive methodInput{ss, boost::archive::no_header};
             methodInput << params;
             return ss.str();
         }
@@ -156,7 +156,7 @@ class Invoker
         {
             typename FuncResult<Func>::type ret;
             std::stringstream ss{output};
-            IArchive methodOutput{ss};
+            IArchive methodOutput{ss, boost::archive::no_header};
             methodOutput >> ret;
             return ret;
         }

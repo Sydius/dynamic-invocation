@@ -28,7 +28,6 @@ or implied, of Christopher Allen Ogden.
 
 #pragma once
 #include <unordered_map>
-#include <sstream>
 #include "call_with_tuple.h" // https://github.com/Sydius/call-with-tuple
 #include "serialize_tuple.h" // https://github.com/Sydius/serialize-tuple
 #include "partial_tuple.h"
@@ -100,20 +99,15 @@ class Invoker
          *
          * @param name      Name of the function to be called
          * @param input     Serialized input
+         * @param output    Serialized return value
          * @param extra...  Extra paramaters to be passed to the function
-         * @return          Serialized return value from the invoked function
+         * @return          True if there was a return value
          */
-        std::string invoke(const std::string & name, const std::string & input, Extra && ... extra)
+        bool invoke(const std::string & name, std::istream & input, std::ostream & output, Extra && ... extra)
         {
-            std::stringstream methodStreamIn{input};
-            std::stringstream methodStreamOut;
-            IArchive methodInput{methodStreamIn, boost::archive::no_header};
-            OArchive methodOutput{methodStreamOut, boost::archive::no_header};
-            if (_methods[name](methodInput, methodOutput, std::forward<Extra>(extra)...)) {
-                return methodStreamOut.str();
-            } else {
-                return std::string();
-            }
+            IArchive methodInput{input, boost::archive::no_header};
+            OArchive methodOutput{output, boost::archive::no_header};
+            return _methods[name](methodInput, methodOutput, std::forward<Extra>(extra)...);
         }
 
         /**
@@ -121,17 +115,15 @@ class Invoker
          *
          * @param name      Name of the function for which to serialize
          * @param func      Actual function for which the serialization is being done (for type-safety checks)
+         * @param output    Serialized output
          * @param args...   Arguments to serialize for the function call
-         * @return          Serialized form of the function call
          */
         template<typename Func, typename... Args>
-        std::string serialize(const std::string & name, Func func, Args && ... args)
+        void serialize(const std::string & name, Func func, std::ostream & output, Args && ... args)
         {
             auto params = TupleFromFunc<Func>::createTuple(std::forward<Args>(args)...);
-            std::stringstream ss;
-            OArchive methodInput{ss, boost::archive::no_header};
+            OArchive methodInput{output, boost::archive::no_header};
             methodInput << params;
-            return ss.str();
         }
 
         template<typename>
@@ -148,15 +140,14 @@ class Invoker
          *
          * @param name      Name of the function for which the deserialization is being done
          * @param func      Actual function for which the deserialization is being done (for type-safety checks)
-         * @param output    The serialized result to deserialize
+         * @param input     The serialized result to deserialize
          * @return          The deserialized result
          */
         template<typename Func>
-        auto deserialize(const std::string & name, Func func, const std::string & output) -> typename FuncResult<Func>::type
+        auto deserialize(const std::string & name, Func func, std::istream & input) -> typename FuncResult<Func>::type
         {
             typename FuncResult<Func>::type ret;
-            std::stringstream ss{output};
-            IArchive methodOutput{ss, boost::archive::no_header};
+            IArchive methodOutput{input, boost::archive::no_header};
             methodOutput >> ret;
             return ret;
         }

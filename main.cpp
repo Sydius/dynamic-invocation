@@ -42,9 +42,14 @@ BOOST_AUTO_TEST_CASE(no_arguments)
 {
     invoke::Invoker<boost::archive::text_iarchive, boost::archive::text_oarchive> invoker;
     invoker.registerFunction(FUNC(noArgumentsFunc));
-    std::string serialized{invoker.serialize(FUNC(noArgumentsFunc))};
-    std::string result{invoker.invoke("noArgumentsFunc", serialized)};
-    BOOST_CHECK_EQUAL(result, std::string());
+
+    std::stringstream serialized;
+    invoker.serialize(FUNC(noArgumentsFunc), serialized);
+    
+    std::stringstream result;
+    bool hasResult{invoker.invoke("noArgumentsFunc", serialized, result)};
+    
+    BOOST_CHECK_EQUAL(hasResult, false);
 }
 
 int oneArgumentFunc(int x) { return x + 5; }
@@ -53,8 +58,14 @@ BOOST_AUTO_TEST_CASE(one_argument)
 {
     invoke::Invoker<boost::archive::text_iarchive, boost::archive::text_oarchive> invoker;
     invoker.registerFunction(FUNC(oneArgumentFunc));
-    std::string serialized{invoker.serialize(FUNC(oneArgumentFunc), 5)};
-    std::string result{invoker.invoke("oneArgumentFunc", serialized)};
+    
+    std::stringstream serialized;
+    invoker.serialize(FUNC(oneArgumentFunc), serialized, 5);
+
+    std::stringstream result;
+    bool hasResult{invoker.invoke("oneArgumentFunc", serialized, result)};
+
+    BOOST_CHECK_EQUAL(hasResult, true);
     BOOST_CHECK_EQUAL(invoker.deserialize(FUNC(oneArgumentFunc), result), 10);
 }
 
@@ -62,7 +73,13 @@ BOOST_AUTO_TEST_CASE(extra_argument)
 {
     invoke::Invoker<boost::archive::text_iarchive, boost::archive::text_oarchive, int> invoker;
     invoker.registerFunction(FUNC(oneArgumentFunc));
-    std::string serialized{invoker.serialize(FUNC(oneArgumentFunc))};
-    std::string result{invoker.invoke("oneArgumentFunc", serialized, 5)};
+
+    std::stringstream serialized;
+    invoker.serialize(FUNC(oneArgumentFunc), serialized);
+
+    std::stringstream result;
+    bool hasResult{invoker.invoke("oneArgumentFunc", serialized, result, 5)};
+
+    BOOST_CHECK_EQUAL(hasResult, true);
     BOOST_CHECK_EQUAL(invoker.deserialize(FUNC(oneArgumentFunc), result), 10);
 }

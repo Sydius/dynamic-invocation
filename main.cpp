@@ -28,6 +28,8 @@ or implied, of Christopher Allen Ogden.
 
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 #include "invoke.h"
 #define FUNC(x) #x, x
@@ -71,7 +73,7 @@ BOOST_AUTO_TEST_CASE(one_argument)
 
 BOOST_AUTO_TEST_CASE(extra_argument)
 {
-    invoke::Invoker<boost::archive::text_iarchive, boost::archive::text_oarchive, int> invoker;
+    invoke::Invoker<boost::archive::binary_iarchive, boost::archive::binary_oarchive, int> invoker;
     invoker.registerFunction(FUNC(oneArgumentFunc));
 
     std::stringstream serialized;

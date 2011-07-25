@@ -28,6 +28,7 @@ or implied, of Christopher Allen Ogden.
 
 #pragma once
 #include <unordered_map>
+#include <boost/archive/basic_archive.hpp>
 #include "call_with_tuple.h" // https://github.com/Sydius/call-with-tuple
 #include "serialize_tuple.h" // https://github.com/Sydius/serialize-tuple
 #include "partial_tuple.h"
